@@ -27,7 +27,8 @@ class CameraGeometry:
             self.coord_transform_table = self.make_coord_transform_table(coord_transform_dict=coord_transform_dict)
         else:
             raise ValueError("Either 'wcs' or 'coord_transform_table' must be provided to CameraGeometry.")
-            
+
+        self.match_star_to_detector()
             
     def get_focal_plane_extent(self):
         focal_plane_bbox = self.camera.getFpBBox()
@@ -38,7 +39,9 @@ class CameraGeometry:
 
     def get_detector_extent(self):
         detector_ids = []
-        center_x, center_y = [], []
+        detector_types = []
+        center_fp_x, center_fp_y = [], []
+        center_fa_x, center_fa_y = [], []
         minimum_x, minimum_y = [], []
         maximum_x, maximum_y = [], []
         for detector in self.camera:
@@ -53,16 +56,22 @@ class CameraGeometry:
                 max_y = max(max_y, corner.getY())
 
             detector_ids.append(detector.getId())
-            center_x.append(detector.getCenter(afwCameraGeom.FOCAL_PLANE).getX())
-            center_y.append(detector.getCenter(afwCameraGeom.FOCAL_PLANE).getY())
+            detector_types.append(detector.getPhysicalType())
+            center_fa_x.append(detector.getCenter(afwCameraGeom.FIELD_ANGLE).getX())
+            center_fa_y.append(detector.getCenter(afwCameraGeom.FIELD_ANGLE).getY())
+            center_fp_x.append(detector.getCenter(afwCameraGeom.FOCAL_PLANE).getX())
+            center_fp_y.append(detector.getCenter(afwCameraGeom.FOCAL_PLANE).getY())
             minimum_x.append(min_x)
             minimum_y.append(min_y)
             maximum_x.append(max_x)
             maximum_y.append(max_y)
 
         return {'detector': detector_ids,
-                'center_x': center_x,
-                'center_y': center_y,
+                'detector_type': detector_types,
+                'center_fa_x': center_fa_x,
+                'center_fa_y': center_fa_y,
+                'center_fp_x': center_fp_x,
+                'center_fp_y': center_fp_y,
                 'min_x': minimum_x,
                 'min_y': minimum_y,
                 'max_x': maximum_x,
@@ -72,8 +81,8 @@ class CameraGeometry:
     def make_det_geometry_table(self, det_geom_dict):
         
         columns = [det_geom_dict[key] for key in det_geom_dict.keys()]
-        colnames = ['detector', 'center_x', 'center_y', 'min_x', 'min_y', 'max_x', 'max_y']
-        units = [None, u.mm, u.mm, u.mm, u.mm, u.mm, u.mm]
+        colnames = list(det_geom_dict.keys())
+        units = [None, None, u.deg, u.deg, u.mm, u.mm, u.mm, u.mm, u.mm, u.mm]
 
         table = QTable(data=columns, names=colnames, units=units)
 
@@ -112,7 +121,7 @@ class CameraGeometry:
     def make_coord_transform_table(self, coord_transform_dict):
 
         columns = [coord_transform_dict[key] for key in coord_transform_dict.keys()]
-        colnames = ['ra', 'dec', 'px_x', 'px_y', 'fp_x', 'fp_y', 'fa_x', 'fa_y']
+        colnames = list(coord_transform_dict.keys())
         units = [u.deg, u.deg, u.pixel, u.pixel, u.mm, u.mm, u.deg, u.deg]
         
         table = QTable(data=columns, names=colnames, units=units)
@@ -127,4 +136,30 @@ class CameraGeometry:
         if not required_cols.issubset(table.colnames):
             missing = required_cols - set(table.colnames)
             raise ValueError(f"camera geometry coordinate transform table is missing required column(s): {', '.join(missing)}")
+
+
+    def match_star_to_detector(self):
+        
+        detector, detector_type = [], []
+        for fa_x, fa_y in self.coord_transform_table['fa_x', 'fa_y']:
+            
+            min_dist = np.inf
+            min_detid = np.nan
+            min_dettype = np.nan
+            
+            for detid, dettype, cx, cy in self.det_geometry_table['detector', 'detector_type', 'center_fa_x', 'center_fa_y']:
+                if detid > 188: ##do not consider AOS detectors
+                    continue
+                dist = np.sqrt(np.square(cx-fa_x)+np.square(cy-fa_y))
+
+                if dist < min_dist:
+                    min_dist = dist
+                    min_detid = detid
+                    min_dettype = dettype
+                    
+            detector.append(min_detid)
+            detector_type.append(min_dettype)
+        
+        self.coord_transform_table['detector_id'] = detector
+        self.coord_transform_table['detector_type'] = detector_type
 

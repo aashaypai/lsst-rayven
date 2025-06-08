@@ -9,8 +9,6 @@ from .batoid_simulator import BatoidSimulator
 from lsst.daf.butler import Butler
 from lsst.obs.lsst import LsstCam
 
-
-import batoid
 from astropy.table import join
 
 class GhostTool:
@@ -34,7 +32,7 @@ class GhostTool:
                 zeropoint=kwargs.get('zeropoint', None),
                 exposure_catalog=kwargs.get('exposure_catalog', None)
             )
-
+        
         ######## INITIALIZING DATA PRODUCTS ########
 
         self.data_products = {}
@@ -43,10 +41,10 @@ class GhostTool:
         ############################################
         
         if reflectance is not None:
-            self.reflectances = reflectance
+            self.reflectance = reflectance
             
         else:
-            self.reflectances = Reflectance(
+            self.reflectance = Reflectance(
                 band=self.obs_params.band,
                 L1=kwargs.get('L1', None),
                 L2=kwargs.get('L2', None),
@@ -84,8 +82,11 @@ class GhostTool:
         ###################################
 
         self.batoid_simulator = BatoidSimulator(
+            obs_params=self.obs_params,
+            reflectance=self.reflectance,
             star_table=self.star_table,
-            scaling=kwargs.get('batoid_scaling', 'flux')
+            scaling=kwargs.get('batoid_scaling', 'flux'),
+            verbose=False
         )
 
     def get_data_product(self, dataset_name, detector=94):
@@ -109,9 +110,6 @@ class GhostTool:
 
         # camera
         self.data_products['camera'] = LsstCam.getCamera()
-
-        # telescope for Batoid
-        self.data_products['batoid_telescope'] = batoid.Optic.fromYaml(f"LSST_{self.obs_params.band}.yaml")
 
         # world coordinate system (WCS)
         self.data_products['wcs'] = self.get_data_product('preliminary_visit_image.wcs')
