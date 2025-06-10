@@ -106,7 +106,7 @@ class CameraGeometry:
         ## Transform from focal plane coords to RA, DEC offset from boresight
         tx_fa = central_detector.getTransform(afwCameraGeom.PIXELS, afwCameraGeom.FIELD_ANGLE)
         fax, fay = tx_fa.getMapping().applyForward(np.vstack((px_x, px_y)))
-        fa_x,fa_y = np.rad2deg(fax.ravel()), np.rad2deg(fay.ravel())
+        fa_x,fa_y = fax.ravel(), fay.ravel()
 
         return {'ra': ra, 
                 'dec': dec, 
@@ -122,7 +122,7 @@ class CameraGeometry:
 
         columns = [coord_transform_dict[key] for key in coord_transform_dict.keys()]
         colnames = list(coord_transform_dict.keys())
-        units = [u.deg, u.deg, u.pixel, u.pixel, u.mm, u.mm, u.deg, u.deg]
+        units = [u.deg, u.deg, u.pixel, u.pixel, u.mm, u.mm, u.rad, u.rad]
         
         table = QTable(data=columns, names=colnames, units=units)
 
@@ -137,29 +137,56 @@ class CameraGeometry:
             missing = required_cols - set(table.colnames)
             raise ValueError(f"camera geometry coordinate transform table is missing required column(s): {', '.join(missing)}")
 
-
     def match_star_to_detector(self):
-        
         detector, detector_type = [], []
         for fa_x, fa_y in self.coord_transform_table['fa_x', 'fa_y']:
+            
+            star = Point2D(fa_x.value, fa_y.value)
             
             min_dist = np.inf
             min_detid = np.nan
             min_dettype = np.nan
             
-            for detid, dettype, cx, cy in self.det_geometry_table['detector', 'detector_type', 'center_fa_x', 'center_fa_y']:
-                if detid > 188: ##do not consider AOS detectors
+            for det in self.camera:
+                if det.getId() > 188: ##do not consider AOS detectors
                     continue
-                dist = np.sqrt(np.square(cx-fa_x)+np.square(cy-fa_y))
-
+                    
+                det_center = det.getCenter(afwCameraGeom.FIELD_ANGLE)
+                dist = star.distanceSquared(det_center)
+    
                 if dist < min_dist:
                     min_dist = dist
-                    min_detid = detid
-                    min_dettype = dettype
+                    min_detid = det.getId()
+                    min_dettype = det.getPhysicalType()
                     
             detector.append(min_detid)
             detector_type.append(min_dettype)
         
         self.coord_transform_table['detector_id'] = detector
         self.coord_transform_table['detector_type'] = detector_type
+        
+    # def match_star_to_detector(self):
+        
+    #     detector, detector_type = [], []
+    #     for fa_x, fa_y in self.coord_transform_table['fa_x', 'fa_y']:
+            
+    #         min_dist = np.inf
+    #         min_detid = np.nan
+    #         min_dettype = np.nan
+            
+    #         for detid, dettype, cx, cy in self.det_geometry_table['detector', 'detector_type', 'center_fa_x', 'center_fa_y']:
+    #             if detid > 188: ##do not consider AOS detectors
+    #                 continue
+    #             dist = np.sqrt(np.square(cx-fa_x)+np.square(cy-fa_y))
+
+    #             if dist < min_dist:
+    #                 min_dist = dist
+    #                 min_detid = detid
+    #                 min_dettype = dettype
+                    
+    #         detector.append(min_detid)
+    #         detector_type.append(min_dettype)
+        
+    #     self.coord_transform_table['detector_id'] = detector
+    #     self.coord_transform_table['detector_type'] = detector_type
 
