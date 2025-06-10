@@ -165,28 +165,3 @@ class CameraGeometry:
         self.coord_transform_table['detector_id'] = detector
         self.coord_transform_table['detector_type'] = detector_type
         
-    # def match_star_to_detector(self):
-        
-    #     detector, detector_type = [], []
-    #     for fa_x, fa_y in self.coord_transform_table['fa_x', 'fa_y']:
-            
-    #         min_dist = np.inf
-    #         min_detid = np.nan
-    #         min_dettype = np.nan
-            
-    #         for detid, dettype, cx, cy in self.det_geometry_table['detector', 'detector_type', 'center_fa_x', 'center_fa_y']:
-    #             if detid > 188: ##do not consider AOS detectors
-    #                 continue
-    #             dist = np.sqrt(np.square(cx-fa_x)+np.square(cy-fa_y))
-
-    #             if dist < min_dist:
-    #                 min_dist = dist
-    #                 min_detid = detid
-    #                 min_dettype = dettype
-                    
-    #         detector.append(min_detid)
-    #         detector_type.append(min_dettype)
-        
-    #     self.coord_transform_table['detector_id'] = detector
-    #     self.coord_transform_table['detector_type'] = detector_type
-
