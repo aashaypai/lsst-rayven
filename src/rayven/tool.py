@@ -1,10 +1,10 @@
 from .observation_parameters import ObservationParameters
-from .data_product import DataProduct
 from .constants import LSSTCamConstants
 from .reflectance import Reflectance
 from .bright_star_catalog import BrightStarCatalog
 from .camera_geometry import CameraGeometry
 from .batoid_simulator import BatoidSimulator
+#from .ghost_data import Ghost
 
 from lsst.daf.butler import Butler
 from lsst.obs.lsst import LsstCam
