@@ -167,12 +167,12 @@ class BatoidSimulator:
         ghost_arr = []
 
         for l, r, x, y, f in zip(label_arr, ray_arr, x_arr, y_arr, flux_arr):
-            g = Ghost(name = l, ray = r, x = x *1e3, y = y *1e3, flux = f) # 1e3 to convert from m to mm
-            ghost_arr.append(g)
+            ghost = Ghost(name = l, ray = r, x = x *1e3, y = y *1e3, flux = f) # 1e3 to convert from m to mm
+            ghost_arr.append(ghost)
 
-        gb = GhostBundle(ghosts = ghost_arr)
+        ghost_bundle = GhostBundle(ghosts = ghost_arr)
         
-        return gb
+        return ghost_bundle
         
     def simulate_fov(self):
         ghost_bundles = []
