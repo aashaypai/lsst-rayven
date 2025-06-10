@@ -1,4 +1,5 @@
 from .constants import LSSTCamConstants
+from .ghost_data import Ghost, GhostBundle
 
 import batoid
 import numpy as np
@@ -79,40 +80,118 @@ class BatoidSimulator:
                 surface.forwardCoating = batoid.SimpleCoating(self.reflectance.values[dettype], 
                                                               1-self.reflectance.values[dettype])
 
-    def simulate_single_star(self, fa_x, fa_y, dettype):
-        
+    def simulate_single_star(self, star_index=None, scaling=None, fa_x=None, fa_y=None, dettype=None):
+
+        # option to provide just the star index and then retrieving everything from the star_table
+        if star_index is not None and None in (fa_x, fa_y, dettype):
+            fa_x, fa_y, dettype = self.star_table['fa_x', 'fa_y', 'detector_type'][star_index]
+            scaling = self.scaling[star_index]
+            
+        # option to provide all information manually
+        elif None not in (fa_x, fa_y, dettype, scaling):
+            star_index = None
+
+        else:
+            raise ValueError("Either star_index or all of (fa_x, fa_y, dettype, scaling) must be provided.")
+
+        # set reflectances of the telescope optics and detector
         self.set_optic_reflectance()
         self.set_detector_reflectance(dettype)
+
+        # set wavelength to simulate at
         wavelength = LSSTCamConstants.median_wavelengths[self.obs_params.band] * 1e-9
 
-        
         rays = batoid.RayVector.asPolar(
             optic=self.telescope, wavelength=wavelength,
-            theta_x=np.deg2rad(fa_x), theta_y=np.deg2rad(fa_y),
+            theta_x=(fa_x), theta_y=(fa_y),
             nrad=300, naz=2000
         )
     
         rForward, rReverse = self.telescope.traceSplit(rays, minFlux=1e-4, _verbose=self._verbose)
-        
         forwardFlux = np.sum([np.sum(rr.flux) for rr in rForward])
         reverseFlux = np.sum([np.sum(rr.flux) for rr in rReverse])
     
-        x = np.concatenate([rr.x for rr in rForward])
-        y = np.concatenate([rr.y for rr in rForward])
-        flux = np.concatenate([rr.flux for rr in rForward])
+        x_arr = [rr.x for rr in rForward] 
+        y_arr = [rr.y for rr in rForward]
+        
+        #calculate total batoid flux produced by star
+        tot_flux = np.sum(np.concatenate([rr.flux for rr in rForward]))
+        
+        labels, flux_arr = [], []
+        for ray in rForward:
+            #normalize flux using scaling 
+            normed_flux = self.normalize_flux(flux = ray.flux,
+                                              total_flux = tot_flux,
+                                              scaling = scaling)
+            flux_arr.append(normed_flux)
+            #label each ghost
+            l = self.label_ghost(ray)
+            labels.append(l)
+        
+        gb = self.store_simulated_data(labels, rForward, x_arr, y_arr, flux_arr, tot_flux)
+        
+        return gb
 
-        return x*1e3, y*1e3, flux, rForward 
+    def label_ghost(self, ray):
+        comp_labels = LSSTCamConstants.telescope_component_labels
+        comp = LSSTCamConstants.telescope_components
+        
+        ghost_generating_optics = []
 
+        # find optical elements that repeat with one other element in between
+        # indicating the bounce of a photon
+        for i in range(len(ray.path)-2):
+            if ray.path[i] == ray.path[i+2]:
+                ghost_generating_optics.append(ray.path[i+1])
+
+        # case when there are no repeated elements
+        if np.size(ghost_generating_optics) == 0:
+            ghost_generating_optics = ['', '']
+
+        # labelling the ghost with shorter labels: 
+        # ['Filter_entrance', 'Filter_exit'] becomes 'F1-F2' etc.
+        if '' in ghost_generating_optics: # no bounce case: star flux
+            label = 'Star'
+        else:
+            label = f'{comp_labels[comp.index(ghost_generating_optics[0])]
+                }-{
+                comp_labels[comp.index(ghost_generating_optics[1])]}'
+        
+        return label
+        
+    def normalize_flux(self, flux, total_flux, scaling):
+        
+        return flux/total_flux * scaling
+
+    def store_simulated_data(self, label_arr, ray_arr, x_arr, y_arr, flux_arr, tot_flux):
+        ghost_arr = []
+
+        for l, r, x, y, f in zip(label_arr, ray_arr, x_arr, y_arr, flux_arr):
+            g = Ghost(name = l, ray = r, x = x *1e3, y = y *1e3, flux = f) # 1e3 to convert from m to mm
+            ghost_arr.append(g)
+
+        gb = GhostBundle(ghosts = ghost_arr)
+        
+        return gb
+        
     def simulate_fov(self):
-
+        ghost_bundles = []
         for i in range(self.num_stars):
+            
+            ghost_bundle = self.simulate_single_star(star_index=i)
 
-            fa_x, fa_y, dettype = self.star_table['fa_x', 'fa_y', 'detector_type'][i]
+            ghost_bundles.append(ghost_bundle)
 
-            x, y, flux, ray = self.simulate_single_star(fa_x=fa_x.value, 
-                                                        fa_y=fa_y.value, 
-                                                        dettype=dettype)
-            print(ray.path)
+        return ghost_bundles
+        
+    
+
+    
+
+    
+        
+    
+                         
 
             
         
