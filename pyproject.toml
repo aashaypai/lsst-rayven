@@ -1,6 +1,6 @@
 [project]
 name = "rayven"
-version = "0.1.0"
+version = "1.0.0"
 description = "Package for optical ghost modeling"
 authors = [
   { name = "Aashay Pai", email = "pai@uchicago.edu" }
