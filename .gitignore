@@ -199,3 +199,5 @@ cython_debug/
 *.pdf
 *.jpg
 
+# untitled notebooks
+notebooks/Untitled*.ipynb
