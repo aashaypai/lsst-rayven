@@ -1,3 +1,4 @@
+import astropy.units as u
 from dataclasses import dataclass
 
 from lsst.obs.lsst import LsstCam
@@ -13,9 +14,12 @@ class LSSTCamConstants:
 
     median_wavelengths = dict(u=372, g=481, r=622, i=756, z=868, y=975) ##nm
     
-    pixel_to_arcsec: float = 0.2  # arcsec/pixel
-
+    pixel_to_arcsec: float = 0.2 * u.arcsec/u.pixel # arcsec/pixel
+    mm_to_pixel: float =  1e-3/(10*1e-6) * u.pixel/u.mm # 1 px = 10 um
+    
     focal_plane_bbox = LsstCam.getCamera().getFpBBox()
-    fp_min_x, fp_max_x = focal_plane_bbox.getMinX(), focal_plane_bbox.getMaxX()
-    fp_min_y, fp_max_y = focal_plane_bbox.getMinY(), focal_plane_bbox.getMaxY()
-    fp_width, fp_height = focal_plane_bbox.getWidth(), focal_plane_bbox.getHeight()
+    fp_min_x, fp_max_x = focal_plane_bbox.getMinX() * u.mm, focal_plane_bbox.getMaxX() * u.mm
+    fp_min_y, fp_max_y = focal_plane_bbox.getMinY() * u.mm, focal_plane_bbox.getMaxY() * u.mm
+    fp_width, fp_height = focal_plane_bbox.getWidth() * u.mm, focal_plane_bbox.getHeight() * u.mm
+
+    
