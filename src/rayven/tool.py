@@ -100,24 +100,30 @@ class GhostTool:
             return None
             
     def initialize_data_products(self, **kwargs):
-        # butler
-        butler_dict = kwargs.get('butler_dict', {'repo': "/repo/embargo_new", 
-                                                 'collections':['LSSTCam/raw/all', "LSSTCam/runs/nightlyValidation"],
-                                                 'instrument':"LSSTCam"})
-
-        self.butler = Butler(butler_dict['repo'], collections=butler_dict['collections'], 
-                                        instrument=butler_dict['instrument'])
 
         # camera
         self.data_products['camera'] = LsstCam.getCamera()
 
-        # world coordinate system (WCS)
-        self.data_products['wcs'] = self.get_data_product('preliminary_visit_image.wcs')
-
-        # photoCalib
-        self.data_products['photocalib'] = self.get_data_product('preliminary_visit_image.photoCalib')
-
-
+        if self.obs_params.visit is not None:
+            # butler
+            butler_dict = kwargs.get('butler_dict', {'repo': "/repo/embargo_new", 
+                                                     'collections':['LSSTCam/raw/all',
+                                                                    "LSSTCam/runs/nightlyValidation"],
+                                                     'instrument':"LSSTCam"})
+    
+            self.butler = Butler(butler_dict['repo'], collections=butler_dict['collections'], 
+                                            instrument=butler_dict['instrument'])
+            
+            # world coordinate system (WCS)
+            self.data_products['wcs'] = self.get_data_product('preliminary_visit_image.wcs')
+    
+            # photoCalib
+            self.data_products['photocalib'] = self.get_data_product('preliminary_visit_image.photoCalib')
+        else:
+            self.butler = None
+            self.data_products['wcs'] = None
+            self.data_products['photocalib'] = None
+            
     def make_star_table(self, bright_star_catalog, camera_geometry):
 
         if not len(bright_star_catalog.table) == len(camera_geometry.coord_transform_table):
