@@ -16,6 +16,14 @@ class Ghost:
     y: List[float] = field(default_factory=list)
     flux: List[float] = field(default_factory=list)
 
+    @property
+    def x_size(self):
+        return np.nanmax(self.x)-np.nanmin(self.x)
+
+    @property
+    def y_size(self):
+        return np.nanmax(self.y)-np.nanmin(self.y)
+        
     def bin(self, bins):
         binned_ghost, _, _, _ = binned_statistic_2d(self.x, self.y, 
                                                     range=[[LSSTCamConstants.fp_min_x.value, 
@@ -30,16 +38,17 @@ class Ghost:
         binned_ghost = self.bin(bins = bins)
         
         x_binsize, y_binsize = LSSTCamConstants.fp_width/bins, LSSTCamConstants.fp_height/bins
+        bin_area = np.count_nonzero(binned_ghost) * x_binsize * y_binsize
         
         match units:
             case 'mm':
-                self.area = np.count_nonzero(binned_ghost) * x_binsize * y_binsize
+                self.area = bin_area
             case 'pixel':
-                self.area = np.count_nonzero(binned_ghost) * x_binsize * y_binsize * LSSTCamConstants.mm_to_pixel**2
+                self.area = bin_area * LSSTCamConstants.mm_to_pixel**2
             case 'arcsec':
-                self.area = np.count_nonzero(binned_ghost) * x_binsize * y_binsize * (LSSTCamConstants.mm_to_pixel * LSSTCamConstants.pixel_to_arcsec)**2
+                self.area = bin_area * (LSSTCamConstants.mm_to_pixel * LSSTCamConstants.pixel_to_arcsec)**2
             case 'deg':
-                self.area = (np.count_nonzero(binned_ghost) * x_binsize * y_binsize * (LSSTCamConstants.mm_to_pixel * LSSTCamConstants.pixel_to_arcsec)**2).to(u.deg**2)
+                self.area = (bin_area * (LSSTCamConstants.mm_to_pixel * LSSTCamConstants.pixel_to_arcsec)**2).to(u.deg**2)
                 
         
         
