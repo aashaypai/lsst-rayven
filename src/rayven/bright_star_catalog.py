@@ -47,11 +47,16 @@ class BrightStarCatalog:
     def _validate_bright_star_table(self, table):
         if not isinstance(table, QTable):
             raise TypeError(f"bright star catalog must be an astropy.table.QTable object")
-            
-        required_cols = {'ra', 'dec', 'mag', 'flux'}
-        if not required_cols.issubset(table.colnames):
+
+        required_cols = {'ra':u.deg, 'dec':u.deg, 'mag':u.mag, 'flux':u.ct}
+        
+        if not set(required_cols.keys()).issubset(table.colnames):
             missing = required_cols - set(table.colnames)
             raise ValueError(f"bright star catalog table is missing required column(s): {', '.join(missing)}")
+
+        for column, unit in required_cols.items():
+            if table[column].unit is None:
+                table[column].unit = unit
 
     def get_ybsc(self):
         ybsc = fits.open(self._path)
@@ -94,7 +99,7 @@ class BrightStarCatalog:
         
         columns = [ra, dec, mag, instflux]
         colnames = ['ra', 'dec', 'mag', 'flux']
-        units = [u.deg, u.deg, u.mag, u.def_unit('instflux')]
+        units = [u.deg, u.deg, u.mag, u.ct]
 
         table = QTable(data=columns, names=colnames, units=units)
 

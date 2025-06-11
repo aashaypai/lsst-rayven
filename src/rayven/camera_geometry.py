@@ -132,10 +132,14 @@ class CameraGeometry:
         if not isinstance(table, QTable):
             raise TypeError(f"camera geometry coordinate transform table must be an astropy.table.QTable object")
             
-        required_cols = {'ra', 'dec', 'fa_x', 'fa_y'}
-        if not required_cols.issubset(table.colnames):
+        required_cols = {'ra':u.deg, 'dec':u.deg, 'fa_x':u.rad, 'fa_y':u.rad}
+        if not set(required_cols.keys()).issubset(table.colnames):
             missing = required_cols - set(table.colnames)
             raise ValueError(f"camera geometry coordinate transform table is missing required column(s): {', '.join(missing)}")
+
+        for column, unit in required_cols.items():
+            if table[column].unit is None:
+                table[column].unit = unit
 
     def match_star_to_detector(self):
         detector, detector_type = [], []
