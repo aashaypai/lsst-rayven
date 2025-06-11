@@ -5,7 +5,7 @@ from .reflectance import Reflectance
 from .bright_star_catalog import BrightStarCatalog
 from .camera_geometry import CameraGeometry
 from .batoid_simulator import BatoidSimulator
-from .ghost_data import Ghost, GhostBundle
+from .ghost_data import Ghost, StarGhostSet
 
 __all__ = [
     "ObservationParameters",
@@ -16,6 +16,6 @@ __all__ = [
     "CameraGeometry",
     "BatoidSimulator",
     "Ghost",
-    "GhostBundle"
+    "StarGhostSet"
 ]
 

@@ -1,5 +1,5 @@
 from .constants import LSSTCamConstants
-from .ghost_data import Ghost, GhostBundle
+from .ghost_data import Ghost, StarGhostSet, FieldGhostSet
 
 import batoid
 import numpy as np
@@ -170,19 +170,20 @@ class BatoidSimulator:
             ghost = Ghost(name = l, ray = r, x = x *1e3, y = y *1e3, flux = f) # 1e3 to convert from m to mm
             ghost_arr.append(ghost)
 
-        ghost_bundle = GhostBundle(ghosts = ghost_arr)
+        star_ghost_set = StarGhostSet(ghosts = ghost_arr)
         
-        return ghost_bundle
+        return star_ghost_set
         
     def simulate_fov(self):
-        ghost_bundles = []
+        star_ghost_sets = []
         for i in range(self.num_stars):
             
-            ghost_bundle = self.simulate_single_star(star_index=i)
+            ghost_set = self.simulate_single_star(star_index=i)
 
-            ghost_bundles.append(ghost_bundle)
+            star_ghost_sets.append(ghost_set)
 
-        return ghost_bundles
+        field_ghost_set = FieldGhostSet(star_ghost_sets = star_ghost_sets)
+        return field_ghost_set
         
     
 
