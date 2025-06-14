@@ -33,6 +33,7 @@ class Ghost:
                                                     values=self.flux, statistic='sum', bins=bins)
         return np.flipud(binned_ghost.T)
 
+
     def calculate_area(self, bins=1000, units='mm'):
         
         binned_ghost = self.bin(bins = bins)
@@ -57,10 +58,25 @@ class StarGhostSet:
     ghosts: List[Ghost] = field(default_factory=list)
     
     def __getitem__(self, index):
-        return self.ghosts[index]
+        """
+        Allow indexing by integer (position) or string (ghost name).
+        """
+        if isinstance(index, int):
+            return self.ghosts[index]
+        elif isinstance(index, str):
+            for ghost in self.ghosts:
+                if ghost.name == index:
+                    return ghost
+            raise KeyError(f"Ghost with name '{index}' not found.")
+        else:
+            raise TypeError("Index must be an integer or a string (ghost name).")
 
     def __len__(self):
         return len(self.ghosts)
+
+    @property
+    def labels(self):
+        return [ghost.name for ghost in self.ghosts]
         
     @property
     def x(self):
@@ -69,7 +85,7 @@ class StarGhostSet:
     @property
     def y(self):
         return np.concatenate([ghost.y for ghost in self.ghosts])
-
+        
     @property
     def flux(self):
         return np.concatenate([ghost.flux for ghost in self.ghosts])
@@ -77,7 +93,13 @@ class StarGhostSet:
     @property
     def total_flux(self):
         return np.sum(self.flux)
+    
+    def index(self, name):
+        return [ghost.name for ghost in self.ghosts].index(name)
 
+    def append(self, ghost: Ghost):
+        self.ghosts.append(ghost)
+        
     def bin(self, bins):
         binned_ghosts, _, _, _ = binned_statistic_2d(self.x, self.y, 
                                                     range=[[LSSTCamConstants.fp_min_x.value, 
