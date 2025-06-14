@@ -22,4 +22,7 @@ class LSSTCamConstants:
     fp_min_y, fp_max_y = focal_plane_bbox.getMinY() * u.mm, focal_plane_bbox.getMaxY() * u.mm
     fp_width, fp_height = focal_plane_bbox.getWidth() * u.mm, focal_plane_bbox.getHeight() * u.mm
 
+    ## top 10 brightest ghosts: the only ones seen in lsstcam visits so far
+    _top10: tuple = ('F2-F1', 'D-L32', 'L32-L31', 'L31-F2', 'L31-F1', 'D-L31', 'L32-F2', 'L32-F1', 'D-F2', 'D-F1')
+
     
